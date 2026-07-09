@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Manual Input</title>
+
+<style>
+body{
+  font-family:Segoe UI;
+  background:#eef2f7;
+  margin:0;
+}
+
+/* ===== CONTAINER ===== */
+.container{
+  width:100%;
+  padding:20px;
+  box-sizing:border-box;
+}
+
+/* ===== ROW ===== */
+.row{
+  display:flex;
+  gap:10px;
+  margin-bottom:10px;
+}
+
+input,select{
+  padding:10px;
+  border:1px solid #ccc;
+  border-radius:6px;
+  font-size:17px;
+}
+
+/* ===== TOP ===== */
+.row-top{
+  display:flex;
+  gap:10px;
+}
+
+#school{ width:40%; }
+#type{ width:25%; }
+#level{ width:35%; }
+
+/* 🔥 เพิ่มขนาด dropdown */
+#school, #type, #level{
+  font-size:20px;
+  font-weight:500;
+}
+
+/* ===== IC + BIRTH ===== */
+.row-ic{
+  display:flex;
+  gap:10px;
+}
+
+.row-ic input{
+  width:6cm;        /* 👈 ความยาวตามจริง */
+  min-width:6cm;
+  max-width:6cm;
+}
+
+/* ===== INPUT GROUP ===== */
+.row-group{
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
+  padding-bottom:5px;
+}
+
+.row-group input{
+  min-width:160px;
+}
+
+.row-group input:last-child{
+  min-width:100px;
+}
+
+/* ===== BUTTON ===== */
+button{
+  padding:10px 15px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+.btn-add{background:#1f3c88;color:white;}
+.btn-save{background:#27ae60;color:white;}
+.btn-del{background:#c0392b;color:white;}
+.btn-back{background:#555;color:white;}
+
+/* ===== TABLE ===== */
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:10px;
+  background:white;
+}
+
+th,td{
+  border:1px solid #ccc;
+  padding:6px;
+  font-size:14px;
+  text-align:center;
+}
+
+th{
+  background:#eee;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>กรอกข้อมูลผู้สอบ (Manual)</h2>
+
+<!-- 🔹 แถว 1 -->
+<div class="row-top">
+<select id="school"></select>
+
+<select id="type">
+<option value="">ประเภท</option>
+<option>นักธรรม</option>
+<option>ธรรมศึกษา</option>
+</select>
+
+<select id="level">
+<option value="">ชั้น</option>
+<option>ตรี</option>
+<option>โท</option>
+<option>เอก</option>
+</select>
+</div>
+
+<hr>
+
+<!-- 🔹 แถว 2 (IC + วันเกิด) -->
+<div class="row-ic">
+<input id="idcard" placeholder="เลขบัตร / IC">
+<input id="birth" placeholder="dd/mm/yyyy (วันเกิด ค.ส.)" maxlength="10">
+</div>
+
+<!-- 🔹 ไทย -->
+<div class="row-group">
+<input id="prefix_th" placeholder="คำนำหน้า">
+<input id="firstname_th" placeholder="ชื่อ">
+<input id="lastname_th" placeholder="นามสกุล">
+<input id="temple" placeholder="วัด">
+<input id="city" placeholder="เมือง">
+<input id="province" placeholder="จังหวัด">
+<input id="country" placeholder="ประเทศ">
+</div>
+
+<!-- 🔹 อังกฤษ -->
+<div class="row-group">
+<input id="prefix_en" placeholder="Prefix">
+<input id="firstname_en" placeholder="Firstname">
+<input id="lastname_en" placeholder="Lastname">
+<input id="temple_en" placeholder="Temple">
+<input id="city_en" placeholder="City">
+<input id="province_en" placeholder="Province">
+<input id="country_en" placeholder="Country">
+</div>
+
+<br>
+
+<button class="btn-add" onclick="addPreview()">+ เพิ่มข้อมูล</button>
+
+<h3>Preview</h3>
+
+<table id="previewTable">
+<thead>
+<tr>
+<th>#</th>
+<th>คำนำหน้า</th>
+<th>ชื่อ</th>
+<th>นามสกุล</th>
+<th>วัด</th>
+<th>เมือง</th>
+<th>จังหวัด</th>
+<th>ประเทศ</th>
+<th>วันเกิด</th>
+<th>เลขบัตร</th>
+<th>Prefix</th>
+<th>Firstname</th>
+<th>Lastname</th>
+<th>Temple</th>
+<th>City</th>
+<th>Province</th>
+<th>Country</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+
+<br>
+
+<button class="btn-save" onclick="saveAll()">ยืนยันบันทึก</button>
+<button class="btn-del" onclick="clearAll()">ลบทั้งหมด</button>
+<button class="btn-back" onclick="goBack()">← กลับ</button>
+
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  addDoc
+} from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAydvlN3Zb38LugPmpPqMUT7s22CIPUa4w",
+  authDomain: "kedah1-edmcenter.firebaseapp.com",
+  projectId: "kedah1-edmcenter",
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+let previewData = [];
+
+/* ===== โหลดสำนักเรียน ===== */
+async function loadSchools(){
+  const snap = await getDocs(collection(db,"schools"));
+  const sel = document.getElementById("school");
+
+  sel.innerHTML = '<option value="">เลือกสำนักเรียน</option>';
+
+  snap.forEach(d=>{
+    const opt = document.createElement("option");
+    opt.value = d.id;
+    opt.textContent = d.data().name;
+    sel.appendChild(opt);
+  });
+}
+loadSchools();
+
+/* ===== AUTO FORMAT วันเกิด ===== */
+document.getElementById("birth").addEventListener("input", function(e){
+  let v = e.target.value.replace(/\D/g,'').slice(0,8);
+
+  if(v.length >= 5){
+    e.target.value = v.replace(/(\d{2})(\d{2})(\d{0,4})/, "$1/$2/$3");
+  }else if(v.length >= 3){
+    e.target.value = v.replace(/(\d{2})(\d{0,2})/, "$1/$2");
+  }else{
+    e.target.value = v;
+  }
+});
+
+/* ===== เพิ่ม Preview ===== */
+window.addPreview = function(){
+
+  const data = {
+    schoolId: school.value,
+    type: type.value,
+    level: level.value,
+
+    birth: birth.value,
+    idcard: idcard.value,
+
+    prefix_th: prefix_th.value,
+    firstname_th: firstname_th.value,
+    lastname_th: lastname_th.value,
+    temple: temple.value,
+    city: city.value,
+    province: province.value,
+    country: country.value,
+
+    prefix_en: prefix_en.value,
+    firstname_en: firstname_en.value,
+    lastname_en: lastname_en.value,
+    temple_en: temple_en.value,
+    city_en: city_en.value,
+    province_en: province_en.value,
+    country_en: country_en.value
+  };
+
+  previewData.push(data);
+  renderTable();
+
+  document.querySelectorAll("input").forEach(i=>i.value="");
+};
+
+/* ===== render ===== */
+function renderTable(){
+  const tb = document.querySelector("#previewTable tbody");
+  tb.innerHTML = "";
+
+  previewData.forEach((d,i)=>{
+    tb.innerHTML += `
+    <tr>
+    <td>${i+1}</td>
+    <td>${d.prefix_th}</td>
+    <td>${d.firstname_th}</td>
+    <td>${d.lastname_th}</td>
+    <td>${d.temple}</td>
+    <td>${d.city}</td>
+    <td>${d.province}</td>
+    <td>${d.country}</td>
+    <td>${d.birth || ""}</td>
+    <td>${d.idcard}</td>
+    <td>${d.prefix_en}</td>
+    <td>${d.firstname_en}</td>
+    <td>${d.lastname_en}</td>
+    <td>${d.temple_en}</td>
+    <td>${d.city_en}</td>
+    <td>${d.province_en}</td>
+    <td>${d.country_en}</td>
+    </tr>`;
+  });
+}
+
+/* ===== save ===== */
+window.saveAll = async function(){
+  for(const d of previewData){
+    await addDoc(collection(db,"students"), d);
+  }
+  alert("บันทึกสำเร็จ");
+  previewData = [];
+  renderTable();
+};
+
+/* ===== clear ===== */
+window.clearAll = function(){
+  previewData = [];
+  renderTable();
+};
+
+/* ===== back ===== */
+window.goBack = function(){
+  window.location.href = "index.html";
+};
+
+</script>
+
+</body>
+</html>

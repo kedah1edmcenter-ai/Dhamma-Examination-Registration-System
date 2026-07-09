@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Login - Kedah Exam System</title>
+<style>
+body{
+  font-family:Segoe UI;
+  background:#eef2f7;
+  margin:0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+.box{
+  background:white;
+  padding:30px;
+  border-radius:12px;
+  width:320px;
+  text-align:center;
+  box-shadow:0 4px 20px rgba(0,0,0,.1);
+}
+h2{color:#0d2b4d;margin-bottom:6px;}
+.subtitle{font-size:13px;color:#888;margin-bottom:16px;}
+input{
+  width:100%;
+  padding:10px;
+  margin:8px 0;
+  border-radius:6px;
+  border:1px solid #ccc;
+  box-sizing:border-box;
+  font-size:14px;
+}
+button{
+  width:100%;
+  padding:12px;
+  background:#1f3c88;
+  color:white;
+  border:none;
+  border-radius:8px;
+  font-size:16px;
+  cursor:pointer;
+  margin-top:10px;
+  font-weight:700;
+  transition:.2s;
+}
+button:hover{background:#16316f;}
+button:disabled{background:#aaa;cursor:not-allowed;}
+#msg{margin-top:12px;font-size:14px;min-height:20px;}
+.err{color:#c0392b;}
+.ok{color:#27ae60;}
+</style>
+</head>
+<body>
+
+<div class="box">
+  <h2>🔐 Admin Login</h2>
+  <p class="subtitle">ระบบบริหารข้อมูลผู้สมัครสอบ สนามสอบรัฐเคดาห์</p>
+  <input id="user" placeholder="Username" autocomplete="off">
+  <input id="pass" type="password" placeholder="Password">
+  <button id="loginBtn" onclick="login()">เข้าสู่ระบบ</button>
+  <div id="msg"></div>
+</div>
+
+<script type="module">
+
+import { initializeApp }
+  from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+import { getFirestore, collection, getDocs }
+  from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey:      "AIzaSyAydvlN3Zb38LugPmpPqMUT7s22CIPUa4w",
+  authDomain:  "kedah1-edmcenter.firebaseapp.com",
+  projectId:   "kedah1-edmcenter"
+});
+const db = getFirestore(app);
+
+// ======================================================
+// 🛡 DEVELOPER ACCOUNT — hardcode ลบไม่ได้จาก UI ใดๆ
+// ======================================================
+const DEVELOPER = { username:"sirichai", password:"Sb270887" };
+
+window.login = async function(){
+  const u   = document.getElementById("user").value.trim();
+  const p   = document.getElementById("pass").value.trim();
+  const msg = document.getElementById("msg");
+  const btn = document.getElementById("loginBtn");
+
+  if(!u || !p){
+    msg.className = "err";
+    msg.textContent = "❌ กรุณากรอก Username และ Password";
+    return;
+  }
+
+  btn.disabled    = true;
+  btn.textContent = "กำลังตรวจสอบ...";
+  msg.textContent = "";
+
+  try{
+    // ── 1. ตรวจ Developer account ก่อน ──
+    if(u === DEVELOPER.username && p === DEVELOPER.password){
+      setLogin(u, "developer");
+      return;
+    }
+
+    // ── 2. ตรวจจาก Firestore collection "admins" ──
+    const snap = await getDocs(collection(db,"admins"));
+    let found  = false;
+
+    snap.forEach(d => {
+      const a = d.data();
+      if(a.username === u && a.password === p){
+        found = true;
+        setLogin(u, "admin");
+      }
+    });
+
+    if(!found){
+      msg.className   = "err";
+      msg.textContent = "❌ Username หรือ Password ไม่ถูกต้อง";
+    }
+
+  } catch(err){
+    msg.className   = "err";
+    msg.textContent = "❌ เชื่อมต่อฐานข้อมูลไม่ได้: " + err.message;
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = "เข้าสู่ระบบ";
+  }
+}
+
+function setLogin(username, role){
+  localStorage.setItem("adminLogin", "true");
+  localStorage.setItem("adminUser",  username);
+  localStorage.setItem("adminRole",  role);        // "developer" | "admin"
+  window.location.href = "admin.html";
+}
+
+// กด Enter ใช้งานได้
+document.addEventListener("keydown", e => {
+  if(e.key === "Enter") window.login();
+});
+
+</script>
+</body>
+</html>

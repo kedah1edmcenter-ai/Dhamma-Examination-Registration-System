@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>สำนักเรียนอัปโหลดรายชื่อ</title>
+
+<!-- XLSX -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+<style>
+
+body{
+  margin:0;
+  font-family:Segoe UI;
+  background:#eef2f7;
+}
+
+/* HEADER */
+.header{
+  background:#1f3c88;
+  color:white;
+  padding:20px;
+  text-align:center;
+}
+
+.header h2{
+  margin:0;
+}
+
+/* CONTAINER */
+.container{
+  padding:20px;
+}
+
+.card{
+  background:white;
+  border-radius:12px;
+  padding:20px;
+  box-shadow:0 2px 6px rgba(0,0,0,.08);
+}
+
+/* FORM */
+.row{
+  display:flex;
+  gap:12px;
+  margin-bottom:15px;
+}
+
+select,
+input{
+  width:100%;
+  height:52px;
+  padding:0 14px;
+  border-radius:10px;
+  border:1px solid #ccc;
+  font-size:16px;
+  box-sizing:border-box;
+  background:white;
+}
+
+/* BUTTON */
+button{
+  padding:12px 18px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  font-size:15px;
+}
+
+.btn-blue{
+  background:#1f3c88;
+  color:white;
+}
+
+.btn-green{
+  background:#27ae60;
+  color:white;
+}
+
+.btn-red{
+  background:#c0392b;
+  color:white;
+}
+
+/* TABLE */
+.table-wrap{
+  overflow:auto;
+  max-height:550px;
+  border:1px solid #ddd;
+  margin-top:15px;
+  border-radius:8px;
+}
+
+table{
+  width:max-content;
+  min-width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+  background:white;
+}
+
+th,td{
+  border:1px solid #ddd;
+  padding:6px 10px;
+  white-space:nowrap;
+}
+
+th{
+  background:#f2f2f2;
+  position:sticky;
+  top:0;
+  z-index:2;
+}
+
+.action{
+  margin-top:15px;
+  display:flex;
+  gap:10px;
+}
+
+/* MOBILE */
+@media(max-width:900px){
+
+  .row{
+    flex-direction:column;
+  }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <h2>📤 สำนักเรียนอัปโหลดรายชื่อผู้สมัครสอบ</h2>
+</div>
+
+<!-- CONTENT -->
+<div class="container">
+
+<div class="card">
+
+<!-- SCHOOL -->
+<h3>เลือกสำนักเรียน</h3>
+
+<select id="school">
+<option value="">-- เลือกสำนักเรียน --</option>
+</select>
+
+<!-- UPLOAD -->
+<h3 style="margin-top:25px;">อัปโหลดข้อมูลนักเรียน</h3>
+
+<div class="row">
+
+<select id="type">
+<option value="">เลือกประเภท</option>
+<option value="นักธรรม">นักธรรม</option>
+<option value="ธรรมศึกษา">ธรรมศึกษา</option>
+</select>
+
+<select id="level">
+<option value="">เลือกชั้น</option>
+<option value="ตรี">ตรี</option>
+<option value="โท">โท</option>
+<option value="เอก">เอก</option>
+</select>
+
+<input type="file" id="file">
+
+</div>
+
+<button class="btn-blue" onclick="previewFile()">
+โหลดข้อมูล
+</button>
+
+<!-- PREVIEW -->
+<h3 style="margin-top:25px;">Preview</h3>
+
+<div class="table-wrap">
+
+<table id="preview"></table>
+
+</div>
+
+<!-- ACTION -->
+<div class="action">
+
+<button class="btn-green" onclick="saveData()">
+✅ ยืนยันบันทึก
+</button>
+
+<button class="btn-red" onclick="clearPreview()">
+🗑 ล้างข้อมูล
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+<script type="module">
+
+/* FIREBASE */
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  addDoc
+}
+from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+/* CONFIG */
+const firebaseConfig = {
+
+  apiKey: "AIzaSyAydvlN3Zb38LugPmpPqMUT7s22CIPUa4w",
+
+  authDomain: "kedah1-edmcenter.firebaseapp.com",
+
+  projectId: "kedah1-edmcenter"
+
+};
+
+const app = initializeApp(firebaseConfig);
+
+const db = getFirestore(app);
+
+let previewData=[];
+
+/* LOAD SCHOOL */
+async function loadSchools(){
+
+  const select=document.getElementById("school");
+
+  select.innerHTML=
+  '<option value="">-- เลือกสำนักเรียน --</option>';
+
+  try{
+
+    const snap=await getDocs(
+      collection(db,"schools")
+    );
+
+    snap.forEach(d=>{
+
+      const data=d.data();
+
+      if(!data.name) return;
+
+      const opt=document.createElement("option");
+
+      opt.value=data.name;
+
+      opt.textContent=data.name;
+
+      select.appendChild(opt);
+
+    });
+
+  }catch(err){
+
+    console.error(err);
+
+    alert("โหลดสำนักเรียนไม่สำเร็จ");
+
+  }
+
+}
+
+/* PREVIEW */
+window.previewFile=function(){
+
+  const school=document.getElementById("school").value;
+
+  if(!school){
+
+    alert("กรุณาเลือกสำนักเรียน");
+
+    document.getElementById("school").focus();
+
+    return;
+  }
+
+  const type=document.getElementById("type").value;
+
+  if(!type){
+
+    alert("กรุณาเลือกประเภท");
+
+    return;
+  }
+
+  const level=document.getElementById("level").value;
+
+  if(!level){
+
+    alert("กรุณาเลือกชั้น");
+
+    return;
+  }
+
+  const file=document.getElementById("file").files[0];
+
+  if(!file){
+
+    alert("กรุณาเลือกไฟล์ Excel");
+
+    return;
+  }
+
+  const reader=new FileReader();
+
+  reader.onload=function(e){
+
+    const wb=XLSX.read(
+      new Uint8Array(e.target.result),
+      {type:"array"}
+    );
+
+    const rows=XLSX.utils.sheet_to_json(
+      wb.Sheets[wb.SheetNames[0]],
+      {header:1}
+    );
+
+    previewData=[];
+
+    let html=`<tr>
+
+    <th>ลำดับ</th>
+    <th>คำนำหน้า</th>
+    <th>ชื่อ</th>
+    <th>นามสกุล</th>
+    <th>วัด</th>
+    <th>เมือง</th>
+    <th>จังหวัด</th>
+    <th>ประเทศ</th>
+    <th>วันเกิด</th>
+    <th>เลขบัตร</th>
+
+    <th>Prefix</th>
+    <th>Firstname</th>
+    <th>Lastname</th>
+    <th>Temple</th>
+    <th>City</th>
+    <th>Province</th>
+    <th>Country</th>
+
+    </tr>`;
+
+    for(let i=2;i<rows.length;i++){
+
+      const r=rows[i];
+
+      if(!r || !r[2]) continue;
+
+      const s={
+
+        school:school,
+        type:type,
+        level:level,
+
+        prefix_th:r[1]||"",
+        firstname_th:r[2]||"",
+        lastname_th:r[3]||"",
+        temple:r[4]||"",
+        city:r[5]||"",
+        province:r[6]||"",
+        country:r[7]||"",
+        birth:r[8]||"",
+        idcard:r[9]||"",
+
+        prefix_en:r[10]||"",
+        firstname_en:r[11]||"",
+        lastname_en:r[12]||"",
+        temple_en:r[13]||"",
+        city_en:r[14]||"",
+        province_en:r[15]||"",
+        country_en:r[16]||""
+
+      };
+
+      previewData.push(s);
+
+      html+=`<tr>
+
+      <td>${i-1}</td>
+
+      <td>${s.prefix_th}</td>
+      <td>${s.firstname_th}</td>
+      <td>${s.lastname_th}</td>
+
+      <td>${s.temple}</td>
+      <td>${s.city}</td>
+      <td>${s.province}</td>
+      <td>${s.country}</td>
+
+      <td>${s.birth}</td>
+      <td>${s.idcard}</td>
+
+      <td>${s.prefix_en}</td>
+      <td>${s.firstname_en}</td>
+      <td>${s.lastname_en}</td>
+
+      <td>${s.temple_en}</td>
+      <td>${s.city_en}</td>
+      <td>${s.province_en}</td>
+      <td>${s.country_en}</td>
+
+      </tr>`;
+    }
+
+    document.getElementById("preview").innerHTML=html;
+
+    alert("โหลดข้อมูลสำเร็จ " + previewData.length + " รายการ");
+
+  };
+
+  reader.readAsArrayBuffer(file);
+};
+
+/* SAVE DATA */
+window.saveData=async function(){
+
+  const school=document.getElementById("school").value;
+
+  if(!school){
+
+    alert("กรุณาเลือกสำนักเรียน");
+
+    return;
+  }
+
+  if(previewData.length===0){
+
+    alert("ไม่มีข้อมูลสำหรับบันทึก");
+
+    return;
+  }
+
+  try{
+
+    for(const s of previewData){
+
+      await addDoc(
+        collection(db,"students"),
+        s
+      );
+
+    }
+
+    alert("บันทึกข้อมูลสำเร็จ");
+
+    clearPreview();
+
+  }catch(err){
+
+    console.error(err);
+
+    alert("บันทึกข้อมูลไม่สำเร็จ");
+
+  }
+
+};
+
+/* CLEAR */
+window.clearPreview=function(){
+
+  if(!confirm("ล้างข้อมูลทั้งหมด?")) return;
+
+  previewData=[];
+
+  document.getElementById("preview").innerHTML="";
+
+  document.getElementById("file").value="";
+
+};
+
+/* START */
+loadSchools();
+
+</script>
+
+</body>
+</html>
