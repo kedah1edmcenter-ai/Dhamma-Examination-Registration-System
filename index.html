@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Kedah Exam System</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<style>
+
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+}
+
+html, body{
+  height:100%;
+  font-family:Segoe UI, sans-serif;
+  background:#eef2f7;
+  overflow:hidden;
+}
+
+.header{
+  background:#0d2b4d;
+  color:white;
+  text-align:center;
+  padding:10px 20px;
+}
+
+.header h2{
+  font-size:20px;
+  font-weight:800;
+}
+
+.header p{
+  font-size:13px;
+  margin-top:4px;
+  opacity:.85;
+}
+
+.wrapper{
+  padding:12px 20px;
+  height:calc(100vh - 68px);
+  display:flex;
+  flex-direction:column;
+}
+
+.main-box{
+  background:white;
+  border-radius:16px;
+  padding:18px 24px;
+  box-shadow:0 3px 12px rgba(0,0,0,.08);
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+.welcome{
+  text-align:center;
+  margin-bottom:14px;
+}
+
+.welcome h1{
+  color:#1f3c88;
+  font-size:22px;
+  font-weight:900;
+}
+
+.welcome p{
+  margin-top:4px;
+  font-size:24px;
+  font-weight:900;
+  background:linear-gradient(90deg,#1f3c88,#2563eb,#0ea5e9,#06b6d4);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  line-height:1.3;
+}
+
+.grid-menu{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  margin-bottom:14px;
+}
+
+.menu-card{
+  background:#fff;
+  border-radius:14px;
+  padding:14px 10px;
+  text-align:center;
+  box-shadow:0 2px 8px rgba(0,0,0,.07);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  transition:.2s;
+  border:1px solid #e8edf5;
+}
+
+.menu-card:hover{
+  transform:translateY(-3px);
+  box-shadow:0 4px 14px rgba(0,0,0,.12);
+}
+
+.menu-icon{
+  font-size:28px;
+  margin-bottom:6px;
+  line-height:1;
+}
+
+.menu-title{
+  color:#1f3c88;
+  font-size:15px;
+  font-weight:800;
+  margin-bottom:5px;
+  line-height:1.3;
+}
+
+.menu-sub{
+  color:#888;
+  font-size:12px;
+  line-height:1.5;
+  flex:1;
+  margin-bottom:10px;
+}
+
+.btn-admin{
+  width:100%;
+  padding:9px 0;
+  border:none;
+  border-radius:10px;
+  font-size:13px;
+  font-weight:700;
+  color:white;
+  cursor:pointer;
+  background:#1f3c88;
+  transition:.2s;
+}
+
+.btn-admin:hover{ background:#16316f; }
+.btn-green{ background:#27ae60; }
+.btn-green:hover{ background:#1f8d4d; }
+.btn-red{ background:#c0392b; }
+.btn-red:hover{ background:#a93226; }
+
+.status-section{
+  /* ลบ flex:1 ออก เพื่อให้ section ไม่ยืดเต็มพื้นที่ */
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+}
+
+.status-title{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  margin-bottom:10px;
+}
+
+.status-title span{
+  font-size:18px;
+}
+
+.status-title h2{
+  color:#1f3c88;
+  font-size:17px;
+  font-weight:900;
+}
+
+.status-row{
+  display:flex;
+  justify-content:center;
+  align-items:stretch;
+  gap:14px;
+}
+
+.status-card{
+  border-radius:14px;
+  /* ลดความสูงลง — กำหนด padding แบบแน่นขึ้น */
+  padding:12px 20px;
+  text-align:center;
+  flex:1;
+  max-width:280px;
+  box-shadow:0 2px 8px rgba(0,0,0,.06);
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+
+.status-card.total{ background:#f4f7ff; }
+.status-card.nakdham{ background:#eefbf3; }
+.status-card.dhamsueksa{ background:#fff7ea; }
+
+.status-card-title{
+  font-size:17px;
+  font-weight:800;
+  margin-bottom:6px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+}
+
+.status-card-title .card-icon{
+  font-size:16px;
+}
+
+.status-card.total .status-card-title{ color:#555; }
+.status-card.nakdham .status-card-title{ color:#1e8449; }
+.status-card.dhamsueksa .status-card-title{ color:#d68910; }
+
+.status-big-num{
+  font-size:46px;
+  font-weight:900;
+  color:#1f3c88;
+  line-height:1;
+}
+
+.status-unit{
+  margin-top:4px;
+  color:#777;
+  font-size:17px;
+}
+
+/* เพิ่มขนาดตัวอักษรใน detail ~22% */
+.status-detail{
+  line-height:1.9;
+  font-size:21px;   /* เดิม 17px → +~24% */
+  font-weight:700;
+  color:#333;
+}
+
+.loading-text{
+  color:#aaa;
+  font-size:15px;
+  text-align:center;
+  padding:20px;
+  width:100%;
+}
+
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h2>ระบบบริหารข้อมูลผู้สมัครสอบ สนามสอบรัฐเคดาห์</h2>
+  <p>Examinee Information Management System, Kedah Examination Center</p>
+</div>
+
+<div class="wrapper">
+<div class="main-box">
+
+  <div class="welcome">
+    <h1>ยินดีต้อนรับสู่ระบบบันทึกข้อมูล</h1>
+    <p>ผู้ลงชื่อสอบ นักธรรมและธรรมศึกษา ประจำปี 2569</p>
+  </div>
+
+  <div class="grid-menu">
+
+    <div class="menu-card">
+      <div class="menu-icon">🔐</div>
+      <div class="menu-title">เข้าสู่ระบบแอดมิน</div>
+      <div class="menu-sub">สำหรับผู้ดูแลระบบ</div>
+      <button class="btn-admin" onclick="location.href='login.html'">เข้าสู่ระบบ</button>
+    </div>
+
+    <div class="menu-card">
+      <div class="menu-icon">📤</div>
+      <div class="menu-title">สำนักเรียนอัปโหลดรายชื่อ</div>
+      <div class="menu-sub">อัปโหลดไฟล์ Excel รายชื่อผู้สมัครสอบ</div>
+      <button class="btn-admin" onclick="goSchoolUpload()">เปิดระบบอัปโหลด</button>
+    </div>
+
+    <div class="menu-card">
+      <div class="menu-icon">➕</div>
+      <div class="menu-title">เพิ่มผู้สมัคร</div>
+      <div class="menu-sub">กรณีไม่มีไฟล์รายชื่อ</div>
+      <button class="btn-admin btn-green" onclick="goManual()">เพิ่มข้อมูล</button>
+    </div>
+
+    <div class="menu-card">
+      <div class="menu-icon">📋</div>
+      <div class="menu-title">ประกาศผลสอบ</div>
+      <div class="menu-sub">ตรวจสอบผลสอบนักธรรมและธรรมศึกษา</div>
+      <button class="btn-admin btn-red">ตรวจสอบผลสอบ</button>
+    </div>
+
+  </div>
+
+  <div class="status-section">
+
+    <div class="status-title">
+      <span>📊</span>
+      <h2>สถานะระบบ</h2>
+    </div>
+
+    <div id="summary" class="status-row">
+      <div class="loading-text">กำลังโหลดข้อมูล...</div>
+    </div>
+
+  </div>
+
+</div>
+</div>
+
+<script type="module">
+
+import { initializeApp }
+  from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+import { getFirestore, collection, getDocs }
+  from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAydvlN3Zb38LugPmpPqMUT7s22CIPUa4w",
+  authDomain: "kedah1-edmcenter.firebaseapp.com",
+  projectId: "kedah1-edmcenter"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+window.goManual = () => window.location.href = "manual.html";
+window.goSchoolUpload = () => window.open("school-upload.html","_blank");
+
+async function loadSummary(){
+  const el = document.getElementById("summary");
+  try{
+    const snap = await getDocs(collection(db,"students"));
+    let total = 0;
+    let stats = {
+      "นักธรรม":   { ตรี:0, โท:0, เอก:0 },
+      "ธรรมศึกษา": { ตรี:0, โท:0, เอก:0 }
+    };
+    snap.forEach(d => {
+      const s = d.data(); total++;
+      const type  = (s.type  || "").trim();
+      const level = (s.level || "").trim();
+      if(stats[type] && stats[type][level] !== undefined) stats[type][level]++;
+    });
+
+    el.innerHTML = `
+      <div class="status-card total">
+        <div class="status-card-title">
+          <span class="card-icon">👥</span> รวมทั้งหมด
+        </div>
+        <div class="status-big-num">${total}</div>
+        <div class="status-unit">คน</div>
+      </div>
+      <div class="status-card nakdham">
+        <div class="status-card-title">
+          <span class="card-icon">📘</span> นักธรรม
+        </div>
+        <div class="status-detail">
+          ตรี : ${stats["นักธรรม"].ตรี} คน<br>
+          โท &nbsp;: ${stats["นักธรรม"].โท} คน<br>
+          เอก : ${stats["นักธรรม"].เอก} คน
+        </div>
+      </div>
+      <div class="status-card dhamsueksa">
+        <div class="status-card-title">
+          <span class="card-icon">📙</span> ธรรมศึกษา
+        </div>
+        <div class="status-detail">
+          ตรี : ${stats["ธรรมศึกษา"].ตรี} คน<br>
+          โท &nbsp;: ${stats["ธรรมศึกษา"].โท} คน<br>
+          เอก : ${stats["ธรรมศึกษา"].เอก} คน
+        </div>
+      </div>
+    `;
+  }catch(err){
+    console.error(err);
+    el.innerHTML = `<div style="color:red;text-align:center;padding:20px;font-size:17px;">โหลดข้อมูลไม่สำเร็จ: ${err.message}</div>`;
+  }
+}
+
+loadSummary();
+
+</script>
+</body>
+</html>
